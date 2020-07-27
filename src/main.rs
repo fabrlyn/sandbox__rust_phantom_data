@@ -1,5 +1,6 @@
 use std::fs::read_to_string;
 use std::fs::write;
+use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -12,11 +13,12 @@ pub struct Reader {
     keep_reading: Arc<Mutex<bool>>,
 }
 
-pub struct Writer {
+pub struct Writer<'a> {
     path: PathBuf,
+    _phantom_data: PhantomData<&'a ()>,
 }
 
-impl Writer {
+impl Writer<'_> {
     fn write(&self, content: String) {
         write(&self.path, content).unwrap();
     }
@@ -50,6 +52,7 @@ impl Reader {
     pub fn create_writer(&self) -> Writer {
         Writer {
             path: self.path.clone(),
+            _phantom_data: PhantomData,
         }
     }
 
@@ -70,12 +73,10 @@ impl Reader {
 
 fn main() {
     let path = PathBuf::from("./file-to-write-to.txt");
-    let mut writer = None;
-    {
-        let mut reader = Reader::new(path);
-        reader.start();
-        writer = Some(reader.create_writer());
-    }
+
+    let mut reader = Reader::new(path);
+    reader.start();
+    let writer = Some(reader.create_writer());
 
     if let Some(writer) = writer {
         println!("Writing first value");
