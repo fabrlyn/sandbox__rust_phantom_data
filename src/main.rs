@@ -1,89 +1,109 @@
-use std::fs::read_to_string;
-use std::fs::write;
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::thread;
-use std::time::Duration;
+use std::marker::PhantomData;
+//https://www.reddit.com/r/rust/comments/5iczah/are_there_overheads_to_the_additional_types_used/
 
-pub struct Reader {
-    path: PathBuf,
-    handle: Option<thread::JoinHandle<()>>,
-    keep_reading: Arc<Mutex<bool>>,
+// Mars lander feet vs meters
+/*
+Could be done with enum but it would pass compilation.
+
+
+Side not: Try implemention deref for conting with the number;
+
+The distance sensor outputs a float
+The throttle takes distance sensor output as input
+
+
+V1 does not know if its meters or feet
+
+
+V2 does not at compile time if its meters or feet - check if its true that this adds not runtime overhead.
+*/
+
+/*
+This solution does not fix compile time checks
+
+enum Unit {
+    Meter,
+    Feet,
 }
 
-pub struct Writer {
-    path: PathBuf,
+struct V1Float64 {
+    value: f64,
+    unit: Unit,
+}
+*/
+
+/*
+This fixes compile time issues but is a bit more clumsey when it comes to addition/multiplication etc (Make a version of this)
+Need to implement duplicates for every combination. (Check this)
+Also doesn't scale for addning new types (check this)
+
+struct Float64InMeter(f64);
+struct Float64InFeet(f64);
+*/
+
+#[derive(Debug)]
+struct Meter;
+
+#[derive(Debug)]
+struct Feet;
+
+#[derive(Debug)]
+struct Millimeter;
+
+#[derive(Debug)]
+struct Float64<T> {
+    value: f64,
+    _phantom_data: PhantomData<T>,
 }
 
-impl Writer {
-    fn write(&self, content: String) {
-        write(&self.path, content).unwrap();
+impl<T> Float64<T> {
+    fn new(value: f64) -> Float64<T> {
+        return Float64 {
+            value,
+            _phantom_data: PhantomData,
+        };
     }
 }
 
-impl Drop for Reader {
-    fn drop(&mut self) {
-        println!("Dropping Reader");
-        {
-            let mut keep_reading = self.keep_reading.lock().unwrap();
-            *keep_reading = false;
-        }
-
-        if let Some(handle) = self.handle.take() {
-            if let Err(e) = handle.join() {
-                println!("Failed to wait for thread: {:?}", e);
-            }
+impl<T> std::ops::Mul for Float64<T> {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> <Self as std::ops::Mul<Self>>::Output {
+        Float64 {
+            value: self.value * rhs.value,
+            _phantom_data: PhantomData,
         }
     }
 }
 
-impl Reader {
-    pub fn new(path: PathBuf) -> Reader {
-        Reader {
-            path,
-            handle: None,
-            keep_reading: Arc::new(Mutex::new(true)),
-        }
-    }
+fn get_current_distance() -> Float64<Feet> {
+    Float64::new(10.3)
+}
 
-    pub fn create_writer(&self) -> Writer {
-        Writer {
-            path: self.path.clone(),
-        }
-    }
+// Add automatic conversion from Feet to Meter with std::convert::From
+fn apply_thrust(distance: Float64<Feet>) {
+    //Do something with the thrust value
+    let thrust_value = distance * Float64::new(0.5);
 
-    pub fn start(&mut self) {
-        let keep_reading = self.keep_reading.clone();
-        let path = self.path.clone();
-
-        let handle = thread::spawn(move || {
-            while *keep_reading.lock().unwrap() {
-                thread::sleep(Duration::from_secs(1));
-                let content = read_to_string(&path);
-                println!("Content is: {:?}", content);
-            }
-        });
-        self.handle = Some(handle)
-    }
+    println!("Trust value: {:?}", thrust_value);
 }
 
 fn main() {
-    let path = PathBuf::from("./file-to-write-to.txt");
-    let mut writer = None;
-    {
-        let mut reader = Reader::new(path);
-        reader.start();
-        writer = Some(reader.create_writer());
-    }
+    let a: Float64<Millimeter> = Float64 {
+        value: 10.0,
+        _phantom_data: PhantomData,
+    };
 
-    if let Some(writer) = writer {
-        println!("Writing first value");
-        writer.write("Hello".to_string());
-        thread::sleep(Duration::from_millis(1500));
+    let b: Float64<Millimeter> = Float64 {
+        value: 10.0,
+        _phantom_data: PhantomData,
+    };
 
-        println!("Writing second value");
-        writer.write("Good bye".to_string());
-        thread::sleep(Duration::from_millis(1500));
-    }
+    let c = b * a;
+    println!("c: {:?}", c);
+
+    let value: f64 = 10.3;
+    let current_distance = get_current_distance();
+    println!("Size of: {:?}", std::mem::size_of_val(&value));
+    println!("Size of: {:?}", std::mem::size_of_val(&current_distance));
+    apply_thrust(current_distance);
 }
