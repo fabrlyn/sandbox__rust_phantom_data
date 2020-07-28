@@ -7,42 +7,31 @@
 */
 
 mod shared {
-    pub enum Unit {
-        Meter,
-        Feet,
-    }
-
-    pub struct Float64 {
-        pub value: f64,
-        pub unit: Unit,
+    pub enum Float64 {
+        Meter(f64),
+        Feet(f64),
     }
 }
 
 mod sensor_team {
-    use super::shared::{Float64, Unit};
+    use super::shared::Float64;
 
     pub fn get_current_distance() -> Float64 {
-        Float64 {
-            value: 10.3,
-            unit: Unit::Feet,
-        }
+        Float64::Feet(10.3)
     }
 }
 
 mod thrust_team {
-    use super::shared::{Float64, Unit};
+    use super::shared::Float64;
 
     fn get_important_thrust_number() -> Float64 {
-        Float64 {
-            value: 0.5,
-            unit: Unit::Meter,
-        }
+        Float64::Meter(0.5)
     }
 
     pub fn apply_thrust(distance: Float64) {
         let important_thrust_number = get_important_thrust_number();
-        if let (Unit::Meter, Unit::Meter) = (important_thrust_number.unit, distance.unit) {
-            let thrust_value = distance.value * important_thrust_number.value;
+        if let (Float64::Meter(t), Float64::Meter(d)) = (important_thrust_number, distance) {
+            let thrust_value = d * t;
             println!("Thrust value: {:?}", thrust_value);
         } else {
             println!("Failed to calculate thrust")
@@ -50,10 +39,17 @@ mod thrust_team {
     }
 }
 
-use sensor_team::get_current_distance;
-use thrust_team::apply_thrust;
+mod systems_team {
+    use super::sensor_team::get_current_distance;
+    use super::thrust_team::apply_thrust;
 
+    pub fn land_vehicle() {
+        let current_distance = get_current_distance();
+        apply_thrust(current_distance);
+    }
+}
+
+use systems_team::land_vehicle;
 fn main() {
-    let current_distance = get_current_distance();
-    apply_thrust(current_distance);
+    land_vehicle();
 }
