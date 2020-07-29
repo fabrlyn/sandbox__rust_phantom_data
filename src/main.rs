@@ -9,12 +9,34 @@ Also doesn't scale for addning new types (check this)
 */
 
 mod shared {
+    use std::ops::Mul;
+
+    #[derive(Debug)]
     pub struct Float64InFeet {
         pub value: f64,
     }
 
+    #[derive(Debug)]
     pub struct Float64InMeter {
         pub value: f64,
+    }
+
+    impl Mul for Float64InMeter {
+        type Output = Self;
+        fn mul(self, rhs: Self) -> <Self as Mul<Self>>::Output {
+            Float64InMeter {
+                value: self.value * rhs.value,
+            }
+        }
+    }
+
+    impl Mul for Float64InFeet {
+        type Output = Self;
+        fn mul(self, rhs: Self) -> <Self as Mul<Self>>::Output {
+            Float64InFeet {
+                value: self.value * rhs.value,
+            }
+        }
     }
 }
 
@@ -35,7 +57,7 @@ mod thrust_team {
 
     pub fn apply_thrust(distance: Float64InMeter) {
         let important_thrust_number = get_important_thrust_number();
-        let thrust_value = distance.value * important_thrust_number.value;
+        let thrust_value = distance * important_thrust_number;
         println!("Thrust value: {:?}", thrust_value);
     }
 }
