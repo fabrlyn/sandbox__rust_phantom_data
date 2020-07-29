@@ -2,40 +2,20 @@
 
 // Mars lander feet vs meters
 
-/*
-This fixes compile time issues but is a bit more clumsey when it comes to addition/multiplication etc (Make a version of this)
-Need to implement duplicates for every combination. (Check this)
-Also doesn't scale for addning new types (check this)
-*/
-
-mod shared {
-    pub struct Float64InFeet {
-        pub value: f64,
-    }
-
-    pub struct Float64InMeter {
-        pub value: f64,
-    }
-}
-
 mod sensor_team {
-    use super::shared::Float64InFeet;
-
-    pub fn get_current_distance() -> Float64InFeet {
-        Float64InFeet { value: 10.3 }
+    pub fn get_current_distance() -> f64 {
+        10.3 // This value is in feet
     }
 }
 
 mod thrust_team {
-    use super::shared::Float64InMeter;
-
-    fn get_important_thrust_number() -> Float64InMeter {
-        Float64InMeter { value: 0.5 }
+    fn get_important_thrust_number() -> f64 {
+        0.5 // This value is in meters
     }
 
-    pub fn apply_thrust(distance: Float64InMeter) {
+    pub fn apply_thrust(distance: f64) {
         let important_thrust_number = get_important_thrust_number();
-        let thrust_value = distance.value * important_thrust_number.value;
+        let thrust_value = distance * important_thrust_number;
         println!("Thrust value: {:?}", thrust_value);
     }
 }
