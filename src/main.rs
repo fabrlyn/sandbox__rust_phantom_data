@@ -1,7 +1,3 @@
-//https://www.reddit.com/r/rust/comments/5iczah/are_there_overheads_to_the_additional_types_used/
-
-// Mars lander feet vs meters
-
 mod sensor_team {
     pub fn get_current_distance() -> f64 {
         10.3 // This value is in feet
@@ -24,13 +20,13 @@ mod systems_team {
     use super::sensor_team::get_current_distance;
     use super::thrust_team::apply_thrust;
 
-    pub fn land_vehicle() {
+    pub fn land_spaceship() {
         let current_distance = get_current_distance();
         apply_thrust(current_distance);
     }
 }
 
-use systems_team::land_vehicle;
+use systems_team::land_spaceship;
 fn main() {
-    land_vehicle();
+    land_spaceship();
 }
