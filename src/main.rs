@@ -16,7 +16,7 @@ mod thrust_team {
     }
 }
 
-mod systems_team {
+mod system_team {
     use super::sensor_team::get_current_distance;
     use super::thrust_team::apply_thrust;
 
@@ -26,7 +26,7 @@ mod systems_team {
     }
 }
 
-use systems_team::land_spaceship;
+use system_team::land_spaceship;
 fn main() {
     land_spaceship();
 }
