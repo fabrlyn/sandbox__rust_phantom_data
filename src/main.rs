@@ -48,7 +48,7 @@ mod thrust_team {
     use super::shared::{Float64, Meter};
 
     fn get_important_thrust_number() -> Float64<Meter> {
-        Float64::new(0.5) // This value is in meters
+        Float64::new(0.5)
     }
 
     pub fn apply_thrust(distance: Float64<Meter>) {
@@ -58,7 +58,7 @@ mod thrust_team {
     }
 }
 
-mod systems_team {
+mod system_team {
     use super::sensor_team::get_current_distance;
     use super::thrust_team::apply_thrust;
 
@@ -68,7 +68,7 @@ mod systems_team {
     }
 }
 
-use systems_team::land_spaceship;
+use system_team::land_spaceship;
 fn main() {
     land_spaceship();
 }
