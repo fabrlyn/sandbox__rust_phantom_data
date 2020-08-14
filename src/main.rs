@@ -1,16 +1,8 @@
-use std::fs::read_to_string;
-use std::fs::write;
+use std::fs::{read_to_string, write};
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-
-pub struct Reader {
-    path: PathBuf,
-    handle: Option<thread::JoinHandle<()>>,
-    keep_reading: Arc<Mutex<bool>>,
-}
 
 pub struct Writer {
     path: PathBuf,
@@ -20,6 +12,12 @@ impl Writer {
     fn write(&self, content: String) {
         write(&self.path, content).unwrap();
     }
+}
+
+pub struct Reader {
+    path: PathBuf,
+    handle: Option<thread::JoinHandle<()>>,
+    keep_reading: Arc<Mutex<bool>>,
 }
 
 impl Drop for Reader {
