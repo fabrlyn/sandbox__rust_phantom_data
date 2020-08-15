@@ -1,6 +1,7 @@
 use std::fs::{read_to_string, write};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
@@ -17,16 +18,13 @@ impl Writer {
 pub struct Reader {
     path: PathBuf,
     handle: Option<thread::JoinHandle<()>>,
-    keep_reading: Arc<Mutex<bool>>,
+    keep_reading: Arc<AtomicBool>,
 }
 
 impl Drop for Reader {
     fn drop(&mut self) {
         println!("Dropping Reader");
-        {
-            let mut keep_reading = self.keep_reading.lock().unwrap();
-            *keep_reading = false;
-        }
+        self.keep_reading.store(false, Ordering::Relaxed);
 
         if let Some(handle) = self.handle.take() {
             if let Err(e) = handle.join() {
@@ -41,7 +39,7 @@ impl Reader {
         Reader {
             path,
             handle: None,
-            keep_reading: Arc::new(Mutex::new(true)),
+            keep_reading: Arc::new(AtomicBool::new(true)),
         }
     }
 
@@ -55,11 +53,14 @@ impl Reader {
         let keep_reading = self.keep_reading.clone();
         let path = self.path.clone();
 
-        let handle = thread::spawn(move || {
-            while *keep_reading.lock().unwrap() {
-                thread::sleep(Duration::from_secs(1));
-                let content = read_to_string(&path);
+        let handle = thread::spawn(move || loop {
+            thread::sleep(Duration::from_millis(100));
+            if let Ok(content) = read_to_string(&path) {
                 println!("Content is: {:?}", content);
+            }
+
+            if !keep_reading.load(Ordering::Relaxed) {
+                break;
             }
         });
         self.handle = Some(handle)
@@ -68,6 +69,8 @@ impl Reader {
 
 fn main() {
     let path = PathBuf::from("./file-to-write-to.txt");
+    std::fs::remove_file(&path).unwrap_or_default();
+
     let mut writer = None;
     {
         let mut reader = Reader::new(path);
@@ -77,11 +80,11 @@ fn main() {
 
     if let Some(writer) = writer {
         println!("Writing first value");
-        writer.write("Hello".to_string());
-        thread::sleep(Duration::from_millis(1500));
+        writer.write("First Value".to_string());
+        thread::sleep(Duration::from_millis(400));
 
         println!("Writing second value");
-        writer.write("Good bye".to_string());
-        thread::sleep(Duration::from_millis(1500));
+        writer.write("Second Value".to_string());
+        thread::sleep(Duration::from_millis(400));
     }
 }
