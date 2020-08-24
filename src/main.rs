@@ -10,7 +10,12 @@ pub struct Writer {
 }
 
 impl Writer {
+    pub fn new(path: &PathBuf) -> Writer {
+        Writer { path: path.clone() }
+    }
+
     fn write(&self, content: String) {
+        println!("Writing: \"{}\"", content);
         write(&self.path, content).unwrap();
     }
 }
@@ -35,17 +40,11 @@ impl Drop for Reader {
 }
 
 impl Reader {
-    pub fn new(path: PathBuf) -> Reader {
+    pub fn new(path: &PathBuf) -> Reader {
         Reader {
-            path,
+            path: path.clone(),
             handle: None,
             keep_reading: Arc::new(AtomicBool::new(true)),
-        }
-    }
-
-    pub fn create_writer(&self) -> Writer {
-        Writer {
-            path: self.path.clone(),
         }
     }
 
@@ -71,20 +70,16 @@ fn main() {
     let path = PathBuf::from("./file-to-write-to.txt");
     std::fs::remove_file(&path).unwrap_or_default();
 
-    let mut writer = None;
     {
-        let mut reader = Reader::new(path);
+        let mut reader = Reader::new(&path);
         reader.start();
-        writer = Some(reader.create_writer());
     }
 
-    if let Some(writer) = writer {
-        println!("Writing first value");
-        writer.write("First Value".to_string());
-        thread::sleep(Duration::from_millis(400));
+    let writer = Writer::new(&path);
 
-        println!("Writing second value");
-        writer.write("Second Value".to_string());
-        thread::sleep(Duration::from_millis(400));
-    }
+    writer.write("First Value".to_string());
+    thread::sleep(Duration::from_millis(400));
+
+    writer.write("Second Value".to_string());
+    thread::sleep(Duration::from_millis(400));
 }
